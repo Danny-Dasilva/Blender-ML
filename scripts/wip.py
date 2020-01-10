@@ -98,8 +98,11 @@ def reverse(scene, camera, object, angle):
     scene.camera.rotation_mode = 'XYZ'
     euler = scene.camera.rotation_euler[2]
     print(euler, "eulers")
-  #  scene.camera.rotation_euler[2] = desired_ang*(pi/180.0)
-    update()scene.camera.data.angle = fov*(pi/180.0)
+    change = desired_ang * (pi / 180.0) + euler
+    print(change)
+    scene.camera.rotation_euler[2] = change 
+    update()
+    #scene.camera.data.angle = fov*(pi/180.0)
     return x
 
 
