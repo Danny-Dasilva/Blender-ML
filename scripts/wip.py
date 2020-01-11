@@ -32,7 +32,6 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
     dg = bpy.context.evaluated_depsgraph_get()
     
     ob = mesh_object.evaluated_get(dg) #this gives us the evaluated version of the object. Aka with all modifiers and deformations applied.
-    print(ob)
     mesh = ob.to_mesh()
     #mesh = mesh_object.to_mesh()
     mesh.transform(mesh_object.matrix_world)
@@ -46,11 +45,8 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
     ly = []
     
     for v in mesh.vertices:
-        
         co_local = v.co
-        print(co_local, "all")
         z = -co_local.z
-        print(z, "z")
 
         if z <= 0.0:
             """ Vertex is behind the camera; ignore it. """
@@ -64,7 +60,6 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
         
         x = (co_local.x - min_x) / (max_x - min_x)
         y = (co_local.y - min_y) / (max_y - min_y)
-        print(x, y, "x/y")
         lx.append(x)
         ly.append(y)
     
@@ -112,7 +107,6 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
 
     pi = 3.14159265
     
-    print(bpy.data.scenes.keys())
     scene = bpy.data.scenes['_mainScene']
 
     # Set render resolution
@@ -127,24 +121,16 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
     scene.camera.rotation_euler[0] = pitch*(pi/180.0)
     scene.camera.rotation_euler[1] = roll*(pi/180)
     scene.camera.rotation_euler[2] = yaw*(pi/180.0)
-    
-    print(roll)
+
     # Set camera translation
     scene.camera.location.x = x
     scene.camera.location.y = y
     scene.camera.location.z = z
     update()
     return scene, scene.camera
-#    scene.render.image_settings.file_format = 'PNG'
-#    scene.render.filepath = "/home/danny/Pictures/renders"
-#    bpy.ops.render.render(write_still = 1)
-#    
-  
 
 
 def get_cordinates(scene, camera,  object, filename):
-#    scene = bpy.data.scenes[scene]
-#    camera_object = bpy.data.objects['Camera']
     camera_object = camera
     bounding_box = camera_view_bounds_2d(scene, camera_object, object)
   
@@ -182,21 +168,18 @@ def center_obj(obj_camera, point):
     # assume we're using euler rotation
     obj_camera.rotation_euler = rot_quat.to_euler()
     update()
-    print([degrees(a) for a in obj_camera.matrix_world.to_euler()])
     eulers = [degrees(a) for a in obj_camera.matrix_world.to_euler()]
     z = eulers[2]
-    print(z)
     distance = measure(point, loc_camera)
     return distance, z
 
 def percent_offset(distance, z, degrees):
     fov = 50 * .9
     width = 640
-    print(320 * distance / fov, "angle dif")
+
     new_yaw = 640 / distance / fov
-    print(z, new_yaw, "input")
+
     yaw = z + new_yaw
-    print(yaw, "yaw")
     scene = bpy.data.scenes['_mainScene']
     scene.camera.rotation_mode = 'XYZ'
     scene.camera.rotation_euler[2] = yaw*(pi/180.0)
@@ -204,7 +187,6 @@ def percent_offset(distance, z, degrees):
 
 def point_at(obj, target, roll=0):
     obj = obj.matrix_world.to_translation()
-    print(obj)
     """
     Rotate obj to look at target
 
@@ -282,9 +264,7 @@ def batch_render(file_prefix="render"):
         bpy.ops.render.render(write_still=True)
         scene_labels = get_cordinates(scene, camera, monkey, filename)
 
-        print(scene_labels, "sceeeeene")
         labels.append(scene_labels) # Merge lists
-        print(labels, "labeeeeeeeeels")
 
     with open('./renders/labels.json', 'w+') as f:
         json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
