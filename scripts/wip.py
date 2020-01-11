@@ -4,8 +4,6 @@ from random import randint, uniform
 from math import *
 import os
 import json
-from time import sleep
-
 from mathutils import Vector
 
 def update():
