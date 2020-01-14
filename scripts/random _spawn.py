@@ -338,7 +338,7 @@ from mathutils.bvhtree import BVHTree
 #print (ray_goal)
 #print (ray_target)
 
-object = bpy.data.objects["Cube"]
+object = bpy.data.objects["Suzanne"]
 camera = bpy.context.scene.camera
 scene = bpy.data.scenes['Scene']
 
@@ -368,36 +368,52 @@ def DeselectEdgesAndPolygons( obj ):
         e.select = False
 
 # Get context elements: scene, camera and mesh
-scene = bpy.context.scene
+
+
+def get_raycast_percentage(cam, obj, cutoff):
+    # Threshold to test if ray cast corresponds to the original vertex
+    limit = 0.0001
+
+    # Deselect mesh elements
+    DeselectEdgesAndPolygons( obj )
+
+    # In world coordinates, get a bvh tree and vertices
+    bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
+
+
+    same_count = 0 
+    count = 0 
+    for i, v in enumerate( vertices ):
+        count += 1
+        # Get the 2D projection of the vertex
+        co2D = world_to_camera_view( scene, cam, v )
+
+        # By default, deselect it
+        obj.data.vertices[i].select = False
+        
+        # If inside the camera view
+        if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0: 
+            # Try a ray cast, in order to test the vertex visibility from the camera
+            location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
+            t = (v-normal).length
+            if t < 0.000008:
+                same_count += 1
+        
+
+    del bvh
+    ray_percent = same_count/ count
+    if ray_percent > cutoff/ 100:
+        value = True
+    else:
+        value = False
+    return value, ray_percent 
+
+
+#scene = bpy.context.scene
 cam = bpy.context.scene.camera
-obj = bpy.data.objects['Cube']
+obj = bpy.data.objects['Suzanne']
 
-# Threshold to test if ray cast corresponds to the original vertex
-limit = 0.0001
+value, percent = get_raycast_percentage(cam, obj, 10)
 
-# Deselect mesh elements
-DeselectEdgesAndPolygons( obj )
 
-# In world coordinates, get a bvh tree and vertices
-bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
-
-print( '-------------------' )
-
-for i, v in enumerate( vertices ):
-    print(i, v)
-    # Get the 2D projection of the vertex
-    co2D = world_to_camera_view( scene, cam, v )
-
-    # By default, deselect it
-    obj.data.vertices[i].select = False
-
-    # If inside the camera view
-    if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0: 
-        # Try a ray cast, in order to test the vertex visibility from the camera
-        location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
-        print(location, normal, index, distance)
-        # If the ray hits something and if this hit is close to the vertex, we assume this is the vertex
-#        if location and (v - location).length < limit:
-#            obj.data.vertices[i].select = True
-
-del bvh
+print(value, percent)
