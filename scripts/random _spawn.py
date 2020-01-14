@@ -282,14 +282,122 @@ def increment_frames(frames):
 
 
 
-import bpy_extras
-monkey = bpy.data.objects["Cube"]
-randomize_obj(monkey, 2, 2, 3)
-scene, camera = randomize_camera(10, 10, 1.7)
-increment_frames(100)
+#import bpy_extras
+#monkey = bpy.data.objects["Cube"]
+#randomize_obj(monkey, 2, 2, 3)
+#scene, camera = randomize_camera(10, 10, 1.7)
+#increment_frames(100)
+#scene = bpy.context.scene
+####         
+#distance, z = center_obj(camera, monkey.matrix_world.to_translation())
+
+
+
+dg = bpy.context.evaluated_depsgraph_get() 
+
+
+import bpy
+from mathutils.bvhtree import BVHTree
+#src = bpy.data.objects["Cube"]
+#bvhtree = BVHTree.FromObject(bpy.data.objects["Cube"], dg)
+#ray_origin = bpy.data.objects["Cube"].location
+#scene = bpy.data.scenes['Scene']
+#ray_direction = bpy.data.objects["Camera"].location
+#location, normal, index, dist = scene.ray_cast(ray_origin, ray_direction)
+
+#print(location, normal, index, dist)
+ # get the context arguments
+# 
+
+
+
+
+
+### foir kiater
+
+#from bpy_extras import view3d_utils
+
+
+
+#scene = bpy.data.scenes['Scene']
+#region = context.region
+#rv3d = context.region_data
+#coord = 320, 320
+#scene = bpy.context.scene 
+#viewlayer = bpy.context.view_layer
+
+## get the ray from the viewport and mouse
+#view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+#ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+#ray_target = ray_origin + (view_vector *-10)
+#ray_goal = ray_origin + (view_vector *1000)
+
+#rayresult = scene.ray_cast(viewlayer, ray_target, ray_goal)
+
+#print (rayresult)
+#print (ray_goal)
+#print (ray_target)
+
+object = bpy.data.objects["Cube"]
+camera = bpy.context.scene.camera
+scene = bpy.data.scenes['Scene']
+
+
+
+viewlayer = bpy.context.view_layer
+
+import bpy
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+from bpy_extras.object_utils import world_to_camera_view
+
+# Create a BVH tree and return bvh and vertices in world coordinates 
+def BVHTreeAndVerticesInWorldFromObj( obj ):
+    mWorld = obj.matrix_world
+    vertsInWorld = [mWorld @ v.co for v in obj.data.vertices]
+
+    bvh = BVHTree.FromPolygons( vertsInWorld, [p.vertices for p in obj.data.polygons] )
+
+    return bvh, vertsInWorld
+
+# Deselect mesh polygons and vertices
+def DeselectEdgesAndPolygons( obj ):
+    for p in obj.data.polygons:
+        p.select = False
+    for e in obj.data.edges:
+        e.select = False
+
+# Get context elements: scene, camera and mesh
 scene = bpy.context.scene
-###         
-distance, z = center_obj(camera, monkey.matrix_world.to_translation())
+cam = bpy.context.scene.camera
+obj = bpy.data.objects['Cube']
 
+# Threshold to test if ray cast corresponds to the original vertex
+limit = 0.0001
 
+# Deselect mesh elements
+DeselectEdgesAndPolygons( obj )
 
+# In world coordinates, get a bvh tree and vertices
+bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
+
+print( '-------------------' )
+
+for i, v in enumerate( vertices ):
+    print(i, v)
+    # Get the 2D projection of the vertex
+    co2D = world_to_camera_view( scene, cam, v )
+
+    # By default, deselect it
+    obj.data.vertices[i].select = False
+
+    # If inside the camera view
+    if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0: 
+        # Try a ray cast, in order to test the vertex visibility from the camera
+        location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
+        print(location, normal, index, distance)
+        # If the ray hits something and if this hit is close to the vertex, we assume this is the vertex
+#        if location and (v - location).length < limit:
+#            obj.data.vertices[i].select = True
+
+del bvh
