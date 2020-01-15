@@ -6,14 +6,9 @@ import numpy as np
 
 import json
 
-shape = {
-                "x1": 0.22264296756123736,
-                "x2": 0.3375516699080045,
-                "y1": 0.6431981754078782,
-                "y2": 0.8368961208425227
-            }
+shape = {'x1': 0.44544906365290016, 'y1': 0.43931046973486837, 'x2': 0.5571863021527523, 'y2': 0.5769498303753064}
 
-img = 'untitled.png'
+img = '3_1.png'
 
 image = cv2.imread(img)
 height, width, channels = image.shape
@@ -27,6 +22,12 @@ y1 = shape['y1'] * height
 y2 = shape['y2'] * height 
 y1 = height - y1
 y2 = height - y2
+
+print(y1, y2, x1, x2)
+x1 = 205
+y1 = 70
+x2 = 373
+y2 = 136
 cv2.rectangle(img,(int(x1),int(y1)),(int(x2),int(y2)),(0,0,255),1)
 
 cv2.imshow('image',img)
