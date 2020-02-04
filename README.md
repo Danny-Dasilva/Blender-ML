@@ -101,6 +101,10 @@ This function cast rays at each of the object vertices and compares them to wher
 It then returns the percent hit as a value. If the object is fully obscructed it will return 0, and if it is fully displayed
 it will display about 50% because half of the rays will hit and the rest will be obstructed by the object. To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
 
+## change in batch_render
+
+if the raycast percentage returns a value less than our cutoff we will start the loop again otherwise the images will be rendered as usual.
+
 ## Tips
 remember to enable cuda in edit cuda
 
