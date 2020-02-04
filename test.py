@@ -5,17 +5,19 @@ from math import *
 import os
 import json
 from time import sleep
+import bpy
+from mathutils import Vector
+from mathutils.bvhtree import BVHTree
+from bpy_extras.object_utils import world_to_camera_view
+
 
 from mathutils import Vector
-import numpy as np
+
 def update():
-    """
-    Update scene
-    """
     dg = bpy.context.evaluated_depsgraph_get() 
     dg.update()
 
-
+import numpy as np
 
 def camera_view_bounds_2d(scene, camera_object, mesh_object):
     """
@@ -96,7 +98,7 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
 
 
 
-def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0, resolution_x=640, resolution_y=480):
+def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
     x = uniform(-x, x)
     y= uniform(-y,y)
     z = z
@@ -113,8 +115,8 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0, resolution_x=640, resoluti
     scene = bpy.data.scenes['_mainScene']
 
     # Set render resolution
-    scene.render.resolution_x = resolution_x
-    scene.render.resolution_y = resolution_y
+    scene.render.resolution_x = 640
+    scene.render.resolution_y = 480
 
     # Set camera fov in degrees
     scene.camera.data.angle = fov*(pi/180.0)
@@ -151,8 +153,6 @@ def get_cordinates(scene, camera,  object, filename):
        return cordinates
     else:
        return None
-   
-
 def measure (first, second):
 
     locx = second[0] - first[0]
@@ -163,9 +163,37 @@ def measure (first, second):
     return distance
 
 
-def center_obj(camera, point):
+def center_obj(obj_camera, point):
+    loc_camera = obj_camera.matrix_world.to_translation()
+
+    direction = point - loc_camera
+    # point the cameras '-Z' and use its 'Y' as up
+    rot_quat = direction.to_track_quat('-Z', 'Y')
+    
+    # assume we're using euler rotation
+    obj_camera.rotation_euler = rot_quat.to_euler()
+    update()
+    eulers = [degrees(a) for a in obj_camera.matrix_world.to_euler()]
+    z = eulers[2]
+    distance = measure(point, loc_camera)
+    return distance, z
+
+def percent_offset(distance, z, degrees):
+    fov = 50 * .9
+    width = 640
+
+    new_yaw = 640 / distance / fov
+
+    yaw = z + new_yaw
+    scene = bpy.data.scenes['_mainScene']
+    scene.camera.rotation_mode = 'XYZ'
+    scene.camera.rotation_euler[2] = yaw*(pi/180.0)
+    update()
+
+def point_at(obj, target, roll=0):
+    obj = obj.matrix_world.to_translation()
     """
-    Rotate obj_camera to look at target
+    Rotate obj to look at target
 
     :arg obj: the object to be rotated. Usually the camera
     :arg target: the location (3-tuple or Vector) to be looked at
@@ -173,26 +201,30 @@ def center_obj(camera, point):
 
     Based on: https://blender.stackexchange.com/a/5220/12947 (ideasman42)      
     """
-    loc_camera = camera.matrix_world.to_translation()
+    if not isinstance(target, mathutils.Vector):
+        target = mathutils.Vector(target)
+    loc = obj.location
+    # direction points from the object to the target
+    direction = target - loc
 
-    direction = point - loc_camera
-    # point the cameras '-Z' and use its 'Y' as up
-    rot_quat = direction.to_track_quat('-Z', 'Y')
-    
-    # assume we're using euler rotation
-    camera.rotation_euler = rot_quat.to_euler()
-    update()
-    eulers = [degrees(a) for a in camera.matrix_world.to_euler()]
-    z = eulers[2]
-    distance = measure(point, loc_camera)
-    return distance, z
+    quat = direction.to_track_quat('-Z', 'Y')
+
+    # /usr/share/blender/scripts/addons/add_advanced_objects_menu/arrange_on_curve.py
+    quat = quat.to_matrix().to_4x4()
+    rollMatrix = mathutils.Matrix.Rotation(roll, 4, 'Z')
+
+    # remember the current location, since assigning to obj.matrix_world changes it
+    loc = loc.to_tuple()
+    obj.matrix_world = quat * rollMatrix
+    obj.location = loc
 
 
-
-def offset(scene, camera, angle, width, height):
+def offset(scene, camera, angle):
     
     angle = uniform(-angle, angle)
-
+    height = 480
+    width = 640
+        
     if width > height:    
         ratio = height / width  
         desired_x = (50 / 2) * (angle/100) * ratio
@@ -219,31 +251,124 @@ def offset(scene, camera, angle, width, height):
 
  
 
-def batch_render(file_prefix="render"):
-    # in px
-    width, height = 640, 480
-    scene_setup_steps = 4
+def randomize_obj(obj, x, y, z):
+    
+    roll = uniform(0, 90)
+    pitch = uniform(0, 90)
+    yaw = uniform(0, 90)
+    obj.rotation_mode = 'XYZ'
+    obj.rotation_euler[0] = pitch*(pi/180.0)
+    obj.rotation_euler[1] = roll*(pi/180)
+    obj.rotation_euler[2] = yaw*(pi/180.0)
+    
+    
+    obj.location.x = uniform(-x, x)
+    obj.location.y = uniform(-y, y)
+    obj.location.z = z
 
+def increment_frames(scene, frames):
+    for i in range(frames):
+        scene.frame_set(i)
+
+def BVHTreeAndVerticesInWorldFromObj( obj ):
+    mWorld = obj.matrix_world
+    vertsInWorld = [mWorld @ v.co for v in obj.data.vertices]
+
+    bvh = BVHTree.FromPolygons( vertsInWorld, [p.vertices for p in obj.data.polygons] )
+
+    return bvh, vertsInWorld
+
+# Deselect mesh polygons and vertices
+def DeselectEdgesAndPolygons( obj ):
+    for p in obj.data.polygons:
+        p.select = False
+    for e in obj.data.edges:
+        e.select = False
+
+
+
+
+def get_raycast_percentage(scene, cam, obj, cutoff):
+    # Threshold to test if ray cast corresponds to the original vertex
+    limit = 0.0001
+    viewlayer = bpy.context.view_layer
+    # Deselect mesh elements
+    DeselectEdgesAndPolygons( obj )
+
+    # In world coordinates, get a bvh tree and vertices
+    bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
+
+
+    same_count = 0 
+    count = 0 
+    for i, v in enumerate( vertices ):
+        count += 1
+        # Get the 2D projection of the vertex
+        co2D = world_to_camera_view( scene, cam, v )
+
+        # By default, deselect it
+        obj.data.vertices[i].select = False
+        
+        # If inside the camera view
+        if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0: 
+            # Try a ray cast, in order to test the vertex visibility from the camera
+            location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
+            t = (v-normal).length
+            if t < 0.000008:
+                same_count += 1
+        
+
+    del bvh
+    ray_percent = same_count/ count
+    if ray_percent > cutoff/ 100:
+        value = True
+    else:
+        value = False
+    return value, ray_percent 
+
+
+
+
+
+def batch_render(file_prefix="render"):
+
+    scene_setup_steps = 1
+    value = True
+    loop_count = 0
     labels = []
-    for i in range(0, scene_setup_steps):
+    while loop_count != scene_setup_steps:
+        
         monkey = bpy.data.objects["monkey"]
+        
+        randomize_obj(monkey, 2.5, 3.5, 1.7)
         scene, camera = randomize_camera(2.5, 3.5, 1.7)
+
+        increment_frames(scene, 40)
+
 
          
         distance, z = center_obj(camera, monkey.matrix_world.to_translation())
 
-        offset(scene, camera, 85, width, height)
-
-        filename = '{}-{}y.png'.format(str(file_prefix), str(i))
+        offset(scene, camera, 80)
         
-        bpy.context.scene.render.filepath = os.path.join('/renders/', filename)
-        bpy.ops.render.render(write_still=True)
-        scene_labels = get_cordinates(scene, camera, monkey, filename)
+        value, percent = get_raycast_percentage(scene, camera, monkey, 15)
+        print(percent, "percent in view")
+        if value == False:
+            loop_count -= 1
+            value = True
+        else:
+            
 
-        labels.append(scene_labels) # Merge lists
+            filename = '{}-{}y.png'.format(str(file_prefix), str(loop_count))
+           
+            bpy.context.scene.render.filepath = os.path.join('./renders/', filename)
+            bpy.ops.render.render(write_still=True)
+            scene_labels = get_cordinates(scene, camera, monkey, filename)
+
+            labels.append(scene_labels) # Merge lists
+        loop_count += 1
 
     with open('./renders/labels.json', 'w+') as f:
         json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
-
 
 batch_render()
