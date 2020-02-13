@@ -9,22 +9,28 @@ In this tutorial we will go over generating object detection data for both a sta
 
 ### update
 
+```python
+def update():
+    dg = bpy.context.evaluated_depsgraph_get() 
+    dg.update()
+```
+
 
 ### randomize camera
 
 ```python
 def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
+
     x = uniform(-x, x)
-    y= uniform(-y,y)
-    z = z
+    y= uniform(0,y)
+    z = uniform(0,z)
     pitch = pitch
     roll = roll
     yaw = randint(-yaw/2, yaw/2)
-  
     fov = 50.0
     pi = 3.14159265
+    scene = bpy.data.scenes['Scene']
 
-    scene = bpy.data.scenes['_mainScene']
     # Set render resolution
     scene.render.resolution_x = 640
     scene.render.resolution_y = 480
@@ -42,6 +48,7 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
     scene.camera.location.x = x
     scene.camera.location.y = y
     scene.camera.location.z = z
+    #call update
     update()
     return scene, scene.camera
 ```
@@ -57,8 +64,100 @@ when creating training data it is important to note
 
 
 ## get cordinates
-returns a json object with the 2d cordinate data of the box in the following json format
 
+
+*helpers
+shoutouts to https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function
+```python
+def camera_view_bounds_2d(scene, camera_object, mesh_object):
+    """
+    Returns camera space bounding box of the mesh object.
+    Gets the camera frame bounding box, which by default is returned without any transformations applied.
+    Create a new mesh object based on mesh_object and undo any transformations so that it is in the same space as the
+    camera frame. Find the min/max vertex coordinates of the mesh visible in the frame, or None if the mesh is not in view.
+    :param scene:
+    :param camera_object:
+    :param mesh_object:
+    :return:
+    """
+
+    """ Get the inverse transformation matrix. """
+    matrix = camera_object.matrix_world.normalized().inverted()
+    """ Create a new mesh data block, using the inverse transform matrix to undo any transformations. """
+    dg = bpy.context.evaluated_depsgraph_get()
+    
+    ob = mesh_object.evaluated_get(dg) #this gives us the evaluated version of the object. Aka with all modifiers and deformations applied.
+    mesh = ob.to_mesh()
+    #mesh = mesh_object.to_mesh()
+    mesh.transform(mesh_object.matrix_world)
+    mesh.transform(matrix)
+
+    """ Get the world coordinates for the camera frame bounding box, before any transformations. """
+    frame = [-v for v in camera_object.data.view_frame(scene=scene)[:3]]
+
+
+    lx = []
+    ly = []
+    
+    for v in mesh.vertices:
+        co_local = v.co
+        z = -co_local.z
+
+        if z <= 0.0:
+            """ Vertex is behind the camera; ignore it. """
+            continue
+        else:
+            """ Perspective division """
+            frame = [(v / (v.z / z)) for v in frame]
+        
+        min_x, max_x = frame[1].x, frame[2].x
+        min_y, max_y = frame[0].y, frame[1].y
+        
+        x = (co_local.x - min_x) / (max_x - min_x)
+        y = (co_local.y - min_y) / (max_y - min_y)
+        lx.append(x)
+        ly.append(y)
+    
+    mesh_object.to_mesh_clear()
+
+    """ Image is not in view if all the mesh verts were ignored """
+    if not lx or not ly:
+        return None
+    
+    min_x = np.clip(min(lx), 0.0, 1.0)
+    min_y = np.clip(min(ly), 0.0, 1.0)
+    max_x = np.clip(max(lx), 0.0, 1.0)
+    max_y = np.clip(max(ly), 0.0, 1.0)
+
+    """ Image is not in view if both bounding points exist on the same side """
+    if min_x == max_x or min_y == max_y:
+        return None
+    return (min_x, min_y), (max_x, max_y)
+```
+
+returns a json object with the 2d cordinate data of the box in the following json format
+```python
+def get_cordinates(scene, camera,  objects, filename):
+    camera_object = camera
+    
+  
+    cordinates = {
+            'image': filename,
+            'meshes': {}
+        }
+    for object in objects:
+        bounding_box = camera_view_bounds_2d(scene, camera_object, object)
+        if bounding_box:
+           cordinates['meshes'][object.name] = {
+                        'x1': bounding_box[0][0],
+                        'y1': bounding_box[0][1],
+                        'x2': bounding_box[1][0],
+                        'y2': bounding_box[1][1]
+                    }
+        else:
+            return None
+    return cordinates
+```
 
 `
 [
