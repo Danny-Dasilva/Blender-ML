@@ -288,9 +288,9 @@ def DeselectEdgesAndPolygons( obj ):
 
 
 
-def get_raycast_percentage(scene, cam, obj, cutoff):
+def get_raycast_percentage(scene, cam, obj, cutoff, limit=.0001):
     # Threshold to test if ray cast corresponds to the original vertex
-    limit = 0.0001
+
     viewlayer = bpy.context.view_layer
     # Deselect mesh elements
     DeselectEdgesAndPolygons( obj )
@@ -314,10 +314,8 @@ def get_raycast_percentage(scene, cam, obj, cutoff):
             # Try a ray cast, in order to test the vertex visibility from the camera
             location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
             t = (v-normal).length
-            if t < 0.000008:
+            if t < limit:
                 same_count += 1
-        
-
     del bvh
     ray_percent = same_count/ count
     if ray_percent > cutoff/ 100:

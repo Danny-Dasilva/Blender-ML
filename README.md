@@ -230,17 +230,73 @@ if you put your renders and json file in a directory with `/scripts/visualize.py
 with all this we can loop through the data and write out the image to a folder. Along with thsi the json data 
 
 
+```python
+
+def batch_render(file_prefix="render"):
+
+    scene_setup_steps = 4
+
+    labels = []
+    for i in range(0, scene_setup_steps):
+        monkey = bpy.data.objects["monkey"]
+        scene, camera = randomize_camera(2.5, 3.5, 1.7)
+
+         
+        distance, z = center_obj(camera, monkey.matrix_world.to_translation())
+
+        offset(scene, camera, 85)
+
+        filename = '{}-{}y.png'.format(str(file_prefix), str(i))
+        
+        bpy.context.scene.render.filepath = os.path.join('./renders/', filename)
+        bpy.ops.render.render(write_still=True)
+        scene_labels = get_cordinates(scene, camera, monkey, filename)
+
+        labels.append(scene_labels) # Merge lists
+
+    with open('./renders/labels.json', 'w+') as f:
+        json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+
+```
+
+`batch_render()`
+
 ### Randomly spawn Objects
 in `classroom_rand.blend`
 In this section we will randomly spawn and rotate our object and do physics simulation of the object in the scene.
 Most of the functions used are from the first project but there are a few new ones to 
 
 ## randomize_obj
-randomly spawn the object 
+place object at random location
 
+```python
+
+def randomize_obj(obj, x, y, z):
+    
+    roll = uniform(0, 90)
+    pitch = uniform(0, 90)
+    yaw = uniform(0, 90)
+    obj.rotation_mode = 'XYZ'
+    obj.rotation_euler[0] = pitch*(pi/180.0)
+    obj.rotation_euler[1] = roll*(pi/180)
+    obj.rotation_euler[2] = yaw*(pi/180.0)
+    
+    
+    obj.location.x = uniform(-x, x)
+    obj.location.y = uniform(-y, y)
+    obj.location.z = z
+
+```
 ## increment frames
 loop through physics simulation
+```python
+def increment_frames(scene, frames):
+    for i in range(frames):
+        scene.frame_set(i)
 
+```
 
 ## get raycast percentage
 When running the object through blenders physics simulation there is a chance the object is obstructed.
@@ -248,10 +304,116 @@ This function cast rays at each of the object vertices and compares them to wher
 It then returns the percent hit as a value. If the object is fully obscructed it will return 0, and if it is fully displayed
 it will display about 50% because half of the rays will hit and the rest will be obstructed by the object. To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
 
+*helpers BVHTreeAndVerticesInWorldFromObj and DeselectEdgesAndPolygons
+```python
+
+def BVHTreeAndVerticesInWorldFromObj( obj ):
+    mWorld = obj.matrix_world
+    vertsInWorld = [mWorld @ v.co for v in obj.data.vertices]
+
+    bvh = BVHTree.FromPolygons( vertsInWorld, [p.vertices for p in obj.data.polygons] )
+
+    return bvh, vertsInWorld
+
+# Deselect mesh polygons and vertices
+def DeselectEdgesAndPolygons( obj ):
+    for p in obj.data.polygons:
+        p.select = False
+    for e in obj.data.edges:
+        e.select = False
+```
+
+get raycast percentage function
+
+```python
+def get_raycast_percentage(scene, cam, obj, cutoff, limit=.0001):
+    # Threshold to test if ray cast corresponds to the original vertex
+
+    viewlayer = bpy.context.view_layer
+    # Deselect mesh elements
+    DeselectEdgesAndPolygons( obj )
+
+    # In world coordinates, get a bvh tree and vertices
+    bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
+
+
+    same_count = 0 
+    count = 0 
+    for i, v in enumerate( vertices ):
+        count += 1
+        # Get the 2D projection of the vertex
+        co2D = world_to_camera_view( scene, cam, v )
+
+        # By default, deselect it
+        obj.data.vertices[i].select = False
+        
+        # If inside the camera view
+        if 0.0 <= co2D.x <= 1.0 and 0.0 <= co2D.y <= 1.0: 
+            # Try a ray cast, in order to test the vertex visibility from the camera
+            location, normal, index, distance, t, ty = scene.ray_cast(viewlayer, cam.location, (v - cam.location).normalized() )
+            t = (v-normal).length
+            if t < limit:
+                same_count += 1
+    del bvh
+    ray_percent = same_count/ count
+    if ray_percent > cutoff/ 100:
+        value = True
+    else:
+        value = False
+    return value, ray_percent 
+```
 ## change in batch_render
 
 if the raycast percentage returns a value less than our cutoff we will start the loop again otherwise the images will be rendered as usual.
 
+
+```python
+
+def batch_render(file_prefix="render"):
+
+    scene_setup_steps = 20
+    value = True
+    loop_count = 0
+    labels = []
+    while loop_count != scene_setup_steps:
+        
+        monkey = bpy.data.objects["monkey"]
+        
+        randomize_obj(monkey, 2.5, 3.5, 1.7)
+        scene, camera = randomize_camera(2.5, 3.5, 1.7)
+        increment_frames(scene, 40)
+
+
+         
+        distance, z = center_obj(camera, monkey.matrix_world.to_translation())
+
+        offset(scene, camera, 80)
+        
+        value, percent = get_raycast_percentage(scene, camera, monkey, 15)
+        print(percent, "percent in view")
+        if value == False:
+            loop_count -= 1
+            value = True
+        else:
+            
+
+            filename = '{}-{}y.png'.format(str(file_prefix), str(loop_count))
+           
+            bpy.context.scene.render.filepath = os.path.join('./renders/', filename)
+            bpy.ops.render.render(write_still=True)
+            scene_labels = get_cordinates(scene, camera, monkey, filename)
+
+            labels.append(scene_labels) # Merge lists
+        loop_count += 1
+
+    with open('./renders/labels.json', 'w+') as f:
+        json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+```
+
+and then the function call
+
+`batch_render()`
 ## Tips
 remember to enable cuda in edit cuda
 
