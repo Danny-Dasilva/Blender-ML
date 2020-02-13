@@ -56,11 +56,60 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
 
 this centers the camera on the objecct passed through
 
-this obkect needs to be passes in the the `object.matrix_world.to_translation()` format
+```python
+
+def center_obj(obj_camera, point):
+    point = point.matrix_world.to_translation()
+
+    loc_camera = obj_camera.matrix_world.to_translation()
+
+    direction = point - loc_camera
+    # point the cameras '-Z' and use its 'Y' as up
+    rot_quat = direction.to_track_quat('-Z', 'Y')
+    
+    # assume we're using euler rotation
+    obj_camera.rotation_euler = rot_quat.to_euler()
+    update()
+    eulers = [degrees(a) for a in obj_camera.matrix_world.to_euler()]
+    z = eulers[2]
+    distance = measure(point, loc_camera)
+    return distance, z
+    
+```
 
 ### offset
 
-when creating training data it is important to note 
+when creating training data it is important to note that convolutions dont work so well at the edges
+
+```python
+def offset(scene, camera, angle):
+    
+    angle = uniform(-angle, angle)
+    height = 480
+    width = 640
+        
+    if width > height:    
+        ratio = height / width  
+        desired_x = (50 / 2) * (angle/100) * ratio
+        desired_y = (50 / 2) * (angle/100) 
+    
+    elif height > width:
+        ratio = width / height  
+        desired_x = (50 / 2) * (angle/100)
+        desired_y = (50 / 2) * (angle/100) * ratio
+        
+   
+    scene.camera.rotation_mode = 'XYZ'
+    x = scene.camera.rotation_euler[0]
+    y = scene.camera.rotation_euler[2]
+    
+    change_x = x + (desired_x * (pi / 180.0))
+    change_y = y + (desired_y * (pi / 180.0))
+    scene.camera.rotation_euler[0] = change_x 
+    scene.camera.rotation_euler[2] = change_y 
+    update()
+
+```
 
 
 ## get cordinates
@@ -140,7 +189,6 @@ returns a json object with the 2d cordinate data of the box in the following jso
 def get_cordinates(scene, camera,  objects, filename):
     camera_object = camera
     
-  
     cordinates = {
             'image': filename,
             'meshes': {}
