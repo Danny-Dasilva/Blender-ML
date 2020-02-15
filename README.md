@@ -9,6 +9,8 @@ In this tutorial we will go over generating object detection data for both a sta
 
 ### update
 
+This function is to update the nevironment after we move or change position of an object
+
 ```python
 def update():
     dg = bpy.context.evaluated_depsgraph_get() 
@@ -18,9 +20,26 @@ def update():
 
 ### randomize camera
 
-```python
-def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
+This function randomly positions the camera in the x y and z cordinates that it takes as input
 
+```python
+def randomize_camera(scene, x, y, z, roll=0, pitch=0, yaw=0):
+    """ 
+    Summary line. 
+  
+    Returns camera space bounding box of the mesh object.
+    Takes in 3 xyz cordinates for the area you want to 
+  
+    Parameters: 
+    scene (int): Description of arg1 
+    x (int): Description of arg1 
+    y (int): Description of arg1 
+    z (int): Description of arg1 
+
+  
+    Returns: 
+    bounding_box: (min_x, min_y), (max_x, max_y)
+    """
     x = uniform(-x, x)
     y= uniform(0,y)
     z = uniform(0,z)
@@ -29,7 +48,6 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
     yaw = randint(-yaw/2, yaw/2)
     fov = 50.0
     pi = 3.14159265
-    scene = bpy.data.scenes['Scene']
 
     # Set render resolution
     scene.render.resolution_x = 640
@@ -50,7 +68,7 @@ def randomize_camera(x, y, z, roll=0, pitch=0, yaw=0):
     scene.camera.location.z = z
     #call update
     update()
-    return scene, scene.camera
+    return scene.camera
 ```
 ### center obj
 
@@ -245,7 +263,9 @@ def batch_render(file_prefix="render"):
     labels = []
     for i in range(0, scene_setup_steps):
         monkey = bpy.data.objects["monkey"]
-        scene, camera = randomize_camera(2.5, 3.5, 1.7)
+        scene = bpy.data.scenes['Scene']
+
+        camera = randomize_camera(scene, 2.5, 3.5, 1.7)
 
          
         distance, z = center_obj(camera, monkey.matrix_world.to_translation())
