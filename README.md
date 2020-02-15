@@ -119,15 +119,21 @@ def offset(scene, camera, angle):
 shoutouts to https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function
 ```python
 def camera_view_bounds_2d(scene, camera_object, mesh_object):
-    """
+    """ 
+    Summary line. 
+  
     Returns camera space bounding box of the mesh object.
     Gets the camera frame bounding box, which by default is returned without any transformations applied.
     Create a new mesh object based on mesh_object and undo any transformations so that it is in the same space as the
-    camera frame. Find the min/max vertex coordinates of the mesh visible in the frame, or None if the mesh is not in view.
-    :param scene:
-    :param camera_object:
-    :param mesh_object:
-    :return:
+    camera frame. Find the min/max vertex coordinates of the mesh visible in the frame, or None if the mesh is not in view
+  
+    Parameters: 
+    scene (int): Description of arg1 
+    camera_object (int): Description of arg1 
+    mesh_object (int): Description of arg1 
+  
+    Returns: 
+    bounding_box: (min_x, min_y), (max_x, max_y)
     """
 
     """ Get the inverse transformation matrix. """
