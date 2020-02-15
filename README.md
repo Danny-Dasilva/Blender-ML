@@ -330,27 +330,15 @@ This function cast rays at each of the object vertices and compares them to wher
 It then returns the percent hit as a value. If the object is fully obscructed it will return 0, and if it is fully displayed
 it will display about 50% because half of the rays will hit and the rest will be obstructed by the object. To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
 
-
+![Alt text](imgs/1_side.png?raw=true "Title")
 ![Alt text](imgs/1_back.png?raw=true "Title")
 
+![Alt text](imgs/2_side.png?raw=true "Title")
+![Alt text](imgs/2_back.png?raw=true "Title")
 
 
-![alt text](https://github.com/Danny-Dasilva/Blender-ML/blob/master/imgs/1_side.png)
-
-
-![alt text](https://github.com/Danny-Dasilva/Blender-ML/blob/master/imgs/2_back.png)
-
-
-![alt text](https://github.com/Danny-Dasilva/Blender-ML/blob/master/imgs/2_side.png)
-
-
-
-
-![alt text](https://github.com/Danny-Dasilva/Blender-ML/blob/master/imgs/3_back.png)
-
-
-
-![alt text](https://github.com/Danny-Dasilva/Blender-ML/blob/master/imgs/3_side.png)
+![Alt text](imgs/2_side.png?raw=true "Title")
+![Alt text](imgs/2_back.png?raw=true "Title")
 
 
 
