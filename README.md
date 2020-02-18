@@ -331,10 +331,19 @@ It then returns the percent hit as a value. If the object is fully obscructed it
 it will display about 50% because half of the rays will hit and the rest will be obstructed by the object. To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
 
 
-<img src="imgs/1_side.png" width="425"/> <img src="imgs/1_back.png" width="425"/> 
-<img src="imgs/2_side.png" width="425"/> <img src="imgs/2_back.png" width="425"/> 
-<img src="imgs/3_side.png" width="425"/> <img src="imgs/3_back.png" width="425"/> 
+rays cast at every vertex
 
+<img src="imgs/1_side.png" width="425"/> <img src="imgs/1_back.png" width="425"/> 
+
+
+rays that actually make contact with each vertex
+
+<img src="imgs/2_side.png" width="425"/> <img src="imgs/2_back.png" width="425"/> 
+* percent hit: 46%
+
+ray cast with object obstruction
+<img src="imgs/3_side.png" width="425"/> <img src="imgs/3_back.png" width="425"/> 
+* percent hit: 15%
 
 
 
