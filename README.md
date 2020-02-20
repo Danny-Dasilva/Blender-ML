@@ -7,6 +7,12 @@ In this tutorial we will go over generating object detection data for both a sta
 ## Static object 
 ! img 
 
+
+### imports
+```python
+import
+```
+
 ### update
 
 This function is to update the nevironment after we move or change position of an object
@@ -339,10 +345,13 @@ rays cast at every vertex
 rays that actually make contact with each vertex
 
 <img src="imgs/2_side.png" width="425"/> <img src="imgs/2_back.png" width="425"/> 
+
 * percent hit: 46%
 
 ray cast with object obstruction
+
 <img src="imgs/3_side.png" width="425"/> <img src="imgs/3_back.png" width="425"/> 
+
 * percent hit: 15%
 
 
