@@ -3,6 +3,9 @@
 In this tutorial we will go over generating object detection data for both a static object and one that is randomly spawned
 
 * these scripts are tested in blender 2.81 
+<img src="imgs/home.png"/> 
+
+the examples above cover the two types of data that will be generated
 
 ## Static object 
 ! img 
