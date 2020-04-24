@@ -5,10 +5,11 @@ In this tutorial we will go over generating object detection data for both a sta
 * these scripts are tested in blender 2.81 
 <img src="imgs/home.png"/> 
 
-the examples above cover the two types of data that will be generated
+the examples above cover the two types of data that will be generated. Those being static generated objects and ones that are spawned in and runb through blenders physics simulation.
+
 
 ## Static object 
-! img 
+<img src="imgs/static.png"/> 
 Examples
 
 ### imports
