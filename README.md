@@ -3,10 +3,16 @@
 In this tutorial we will go over generating object detection data for both a static object and one that is randomly spawned
 
 * these scripts are tested in blender 2.81 
+<img src="imgs/home.png"/> 
+
+the examples above cover the two types of data that will be generated. Those being static generated objects and ones that are spawned in and run through blenders physics simulation.
+
 
 ## Static object 
-! img 
-Examples
+<img src="imgs/static.png"/> 
+
+
+IN this section we will be going over the general setup and functions that pull useful object detection data with the assumption that the object in our scene will remain in the same position relative to the scene. Another assumption will be that the camera can see the object in the scene regardless of where it is position. 
 
 ### imports
 ```python
@@ -296,9 +302,13 @@ def batch_render(file_prefix="render"):
 `batch_render()`
 
 ### Randomly spawn Objects
+
+<img src="imgs/spawn.png"/> 
+
+
 in `classroom_rand.blend`
 In this section we will randomly spawn and rotate our object and do physics simulation of the object in the scene.
-Most of the functions used are from the first project but there are a few new ones to 
+Most of the functions used are from the first project but there are a few new ones to account for the physics and actually spawning the object. Along with this we will be adding in a visual check to make sure the object is visible in the scene. 
 
 ## randomize_obj
 place object at random location
