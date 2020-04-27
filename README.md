@@ -146,7 +146,7 @@ def offset(scene, camera, angle):
 
 
 *helpers
-shoutouts to https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function
+see https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function
 ```python
 def camera_view_bounds_2d(scene, camera_object, mesh_object):
     """ 
@@ -427,7 +427,7 @@ def get_raycast_percentage(scene, cam, obj, cutoff, limit=.0001):
 ```
 ## change in batch_render
 
-if the raycast percentage returns a value less than our cutoff we will start the loop again otherwise the images will be rendered as usual.
+If the raycast percentage returns a value less than our cutoff we will start the loop again otherwise the images will be rendered as usual. All training data will then have the desired object in the frame. 
 
 
 ```python
