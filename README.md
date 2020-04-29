@@ -146,7 +146,7 @@ def offset(scene, camera, angle):
 
 
 *helpers
-see https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function
+see https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function. This will pull the outermost cordinates of the object and return them in the form of pixel cordinates. 
 ```python
 def camera_view_bounds_2d(scene, camera_object, mesh_object):
     """ 
