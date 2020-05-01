@@ -306,8 +306,9 @@ def batch_render(file_prefix="render"):
 <img src="imgs/spawn.png"/> 
 
 
-in `classroom_rand.blend`
-In this section we will randomly spawn and rotate our object and do physics simulation of the object in the scene.
+in `classroom_rand.py`
+
+In this section we will randomly spawn and rotate our object. Along with thus we will frame advance to make use of blenders physics simulation.
 Most of the functions used are from the first project but there are a few new ones to account for the physics and actually spawning the object. Along with this we will be adding in a visual check to make sure the object is visible in the scene. 
 
 ## randomize_obj
