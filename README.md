@@ -16,7 +16,8 @@ IN this section we will be going over the general setup and functions that pull 
 
 ### imports
 ```python
-import
+import bpy
+import math
 ```
 
 ### update
