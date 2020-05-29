@@ -7,7 +7,14 @@ In this tutorial we will go over generating object detection data for both a sta
 
 the examples above cover the two types of data that will be generated. Those being static generated objects and ones that are spawned in and run through blenders physics simulation.
 
+Throughout the article I will be going over the following three scenarios
 
+* Multiple stationary objects
+* Objects being spawned in
+* Multiple objects with the same id
+
+
+While these will not cover every scenario the methods provided can be combined to fit your specific use case.
 ## Static object 
 <img src="imgs/static.png"/> 
 
