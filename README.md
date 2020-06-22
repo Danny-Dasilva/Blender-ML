@@ -230,6 +230,7 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
 
 returns a json object with the 2d cordinate data of the box in the following json format
 ```python
+!remove and update
 def get_cordinates(scene, camera,  objects, filename):
     camera_object = camera
     
@@ -275,7 +276,7 @@ with all this we can loop through the data and write out the image to a folder. 
 
 
 ```python
-
+!remove and update
 def batch_render(file_prefix="render"):
 
     scene_setup_steps = 4
@@ -440,7 +441,7 @@ If the raycast percentage returns a value less than our cutoff we will start the
 
 
 ```python
-
+!remove and update
 def batch_render(file_prefix="render"):
 
     scene_setup_steps = 20
