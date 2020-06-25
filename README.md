@@ -34,7 +34,7 @@ The following code is found in `/classroom/static.blend`
 ```python
 import bpy
 import json
-from random import randint, uniform
+from random import uniform
 ```
 
 ### update
@@ -152,7 +152,7 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
 
     #Get the world coordinates for the camera frame bounding box, before any transformations
     frame = [-v for v in camera_object.data.view_frame(scene=scene)[:3]]
-    lx = []Along with thsi the json data 
+    lx = []
     ly = []
     for v in mesh.vertices:
         co_local = v.co
@@ -190,25 +190,23 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
 ### Write Cordinates
 returns a json object with the 2d cordinate data of the box in the following json format
 ```python
-def get_cordinates(scene, camera,  objects, filename):
+def get_cordinates(scene, camera,  object, filename):
     camera_object = camera
-    
+    bounding_box = camera_view_bounds_2d(scene, camera_object, object)
     cordinates = {
             'image': filename,
             'meshes': {}
         }
-    for object in objects:
-        bounding_box = camera_view_bounds_2d(scene, camera_object, object)
-        if bounding_box:
-           cordinates['meshes'][object.name] = {
-                        'x1': bounding_box[0][0],
-                        'y1': bounding_box[0][1],
-                        'x2': bounding_box[1][0],
-                        'y2': bounding_box[1][1]
-                    }
-        else:
-            return None
-    return cordinates
+    if bounding_box:
+       cordinates['meshes'][object.name] = {
+                    'x1': bounding_box[0][0],
+                    'y1': bounding_box[0][1],
+                    'x2': bounding_box[1][0],
+                    'y2': bounding_box[1][1]
+                }
+       return cordinates
+    else:
+       return None
 ```
 ### Json returned
 ```json
@@ -394,20 +392,16 @@ def DeselectEdgesAndPolygons( obj ):
         e.select = False
 ```
 
-get raycast percentage function
-
+#### get raycast percentage function
+This returns a true or false value depending whether or not the threshold is hit. Along with this it also returns the percentage hit 
 ```python
 def get_raycast_percentage(scene, cam, obj, cutoff, limit=.0001):
     # Threshold to test if ray cast corresponds to the original vertex
-
     viewlayer = bpy.context.view_layer
     # Deselect mesh elements
     DeselectEdgesAndPolygons( obj )
-
     # In world coordinates, get a bvh tree and vertices
     bvh, vertices = BVHTreeAndVerticesInWorldFromObj( obj )
-
-
     same_count = 0 
     count = 0 
     for i, v in enumerate( vertices ):
