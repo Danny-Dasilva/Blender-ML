@@ -270,7 +270,7 @@ def batch_render(img_count=1, file_prefix="render", image_dir="./renders/"):
 
 ### Run it 
 
-specify tthe number of images you want generated and run the function
+specify the number of images you want generated and run the function
 
 `batch_render(img_count=4)`
 
@@ -302,6 +302,11 @@ Our object of interest has a rigid body active property applied to it.
 
 The chairs and a few other objects are moodified so their mesh properties can be captured and have physics properties applied. 
 
+### new imports
+
+```python
+
+```
 
 
 ### randomize_obj
@@ -429,57 +434,66 @@ def get_raycast_percentage(scene, cam, obj, cutoff, limit=.0001):
 ```
 ## change in batch_render
 
-If the raycast percentage returns a value less than our cutoff we will start the loop again otherwise the images will be rendered as usual. All training data will then have the desired object in the frame. 
+In order to make sure the object in frame we check the the raycast percentage. If it reaches a threshold less than our cutoff we will start the loop again otherwise the images will be rendered as usual. I also modified this to be a generator becauseit is more data efficient than a list, but this function could be a standard loop.
 
 
 ```python
-def batch_render(file_prefix="render"):
+def batch_render(img_count=1, image_dir="./renders/", file_prefix="render"):
+    
+        value = True
+        object = bpy.data.objects["Suzanne"]
+        scene = bpy.context.scene
+        camera = bpy.data.objects['Camera']
 
-    scene_setup_steps = 20
-    value = True
-    loop_count = 0
-    labels = []
-    while loop_count != scene_setup_steps:
-        
-        monkey = bpy.data.objects["monkey"]
-        
-        randomize_obj(monkey, 2.5, 3.5, 1.7)
-        scene, camera = randomize_camera(2.5, 3.5, 1.7)
-        increment_frames(scene, 40)
+        while loop_count != img_count:
 
-
-         
-        distance, z = center_obj(camera, monkey.matrix_world.to_translation())
-
-        offset(scene, camera, 80)
-        
-        value, percent = get_raycast_percentage(scene, camera, monkey, 15)
-        print(percent, "percent in view")
-        if value == False:
-            loop_count -= 1
-            value = True
-        else:
+            randomize_obj(object, 2.5, 3.5, 1.7)
+            scene = randomize_camera(scene, camera, 2.5, 3.5, 1.7)
+            increment_frames(scene, 40)
+            center_obj(camera, object)
+            offset(scene, camera, 80)
+            value, percent = get_raycast_percentage(scene, camera, object, 15)
             
+            if value == False:
+                    loop_count -= 1
+                    value = True
+            else:
+                    file_format = scene.render.image_settings.file_format.lower()
+                    filename = f'{file_prefix}-{str(loop_count)}.{file_format}'
+                    
+                    #write image out
+                    bpy.context.scene.render.filepath = f'{image_dir}{filename}'
+                    bpy.ops.render.render(write_still=True)
+                    
+                    
+                    #pull cordinates
+                    scene_labels = get_cordinates(scene, camera, object, filename)
+                    
+                    yield scene_labels
 
-            filename = '{}-{}y.png'.format(str(file_prefix), str(loop_count))
-           
-            bpy.context.scene.render.filepath = os.path.join('./renders/', filename)
-            bpy.ops.render.render(write_still=True)
-            scene_labels = get_cordinates(scene, camera, monkey, filename)
-
-            labels.append(scene_labels) # Merge lists
-        loop_count += 1
-
-    with open('./renders/labels.json', 'w+') as f:
-        json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
+            loop_count += 1
 
 ```
+* again note the object and camera being defined, the location calls for `randomize_obj()` and `randomize_camera()`, the number of frames passed to `increment_frames()` and the cutoff for `get_raycast_percentage()`
 
-and then the function call
 
-`batch_render()`
+### Run it 
+
+specify tthe number of images you want generated and run the function
+
+```python
+image_dir = "./renders/"
+
+# returns just the labels
+labels = list(batch_render(img_count=3))
+
+# Write them out
+with open(f'{image_dir}/labels.json', 'w+') as f:
+    json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
+```
+
+
 ## Tips
-remember to enable cuda in edit cuda
 
-take images
+remember to enable CUDA gpu devices in edit -> preferences -> system
 
