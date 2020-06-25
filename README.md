@@ -27,7 +27,6 @@ The following code is found in `/classroom/static.blend`
 ```python
 import bpy
 import mathutils
-import os
 import json
 from random import randint, uniform
 from math import *
