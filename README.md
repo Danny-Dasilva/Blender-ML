@@ -1,35 +1,42 @@
 # Generate training data for object detection model
 
-In this tutorial we will go over generating object detection data for both a static object and one that is randomly spawned
+In this tutorial we will go over generating Object Detection data in Blender. 
 
-* these scripts are tested in blender 2.81 
+* these scripts are tested in blender 2.81 and 2.83
 <img src="imgs/home.png"/> 
 
-the examples above cover the two types of data that will be generated. Those being static generated objects and ones that are spawned in and run through blenders physics simulation.
 
 Throughout the article I will be going over the following three scenarios
 
-* Multiple stationary objects
+* Static or stationary objects
 * Objects being spawned in
-* Multiple objects with the same id
+* Multiple unique objects
 
 
-While these will not cover every scenario the methods provided can be combined to fit your specific use case.
+While these will not cover every scenario the methods provided can be combined to fit your specific use case. The following examples can be found in the `/classroom` folder of this repo. All the blender files are modified versions of the Class room file by Christophe Seux found at https://www.blender.org/download/demo-files/. If you are wondering what is modified from the default scene, the classroom is relatively ceneted in global space and a image texture is placed in the window. 
+
 ## Static object 
 <img src="imgs/static.png"/> 
 
 
-IN this section we will be going over the general setup and functions that pull useful object detection data with the assumption that the object in our scene will remain in the same position relative to the scene. Another assumption will be that the camera can see the object in the scene regardless of where it is position. 
+In this section we will be going over the general setup and functions that pull useful Object Decectition data with the assumption that the object in our scene will remain in the same position. This means the object wont change locations relative to the other objects in the scene. Another assumption will be that the camera can see the object in the scene regardless of where it is positioned. Later on in the tutorial we will cover the camera being obstructed by object in the scene. For now we will lay the basic groundwork of randomly spawning the camera and pulling object detection cordinates from our desired object.
+
+The following code is found in `/classroom/static.blend`
 
 ### imports
 ```python
 import bpy
-import math
+import mathutils
+import os
+import json
+from random import randint, uniform
+from math import *
+from mathutils import Vector
 ```
 
 ### update
 
-This function is to update the nevironment after we move or change position of an object
+This function is to update the environment after we move or change position of an object
 
 ```python
 def update():
@@ -43,89 +50,51 @@ def update():
 This function randomly positions the camera in the x y and z cordinates that it takes as input
 
 ```python
-def randomize_camera(scene, x, y, z, roll=0, pitch=0, yaw=0):
-    """ 
-    Summary line. 
-  
-    Returns camera space bounding box of the mesh object.
-    Takes in 3 xyz cordinates for the area you want to 
-  
-    Parameters: 
-    scene (int): Description of arg1 
-    x (int): Description of arg1 
-    y (int): Description of arg1 
-    z (int): Description of arg1 
-
-  
-    Returns: 
-    bounding_box: (min_x, min_y), (max_x, max_y)
-    """
+def randomize_camera(scene, camera,  x, y, z):
+    #uniform picks a float between two numbers
     x = uniform(-x, x)
-    y= uniform(0,y)
-    z = uniform(0,z)
-    pitch = pitch
-    roll = roll
-    yaw = randint(-yaw/2, yaw/2)
-    fov = 50.0
-    pi = 3.14159265
-
-    # Set render resolution
-    scene.render.resolution_x = 640
-    scene.render.resolution_y = 480
-
-    # Set camera fov in degrees
-    scene.camera.data.angle = fov*(pi/180.0)
-
-    # Set camera rotation in euler angles
-    scene.camera.rotation_mode = 'XYZ'
-    scene.camera.rotation_euler[0] = pitch*(pi/180.0)
-    scene.camera.rotation_euler[1] = roll*(pi/180)
-    scene.camera.rotation_euler[2] = yaw*(pi/180.0)
+    y= uniform(-y,y)
+    #In this case we are not randomizing the z
+    z = z
 
     # Set camera translation
-    scene.camera.location.x = x
-    scene.camera.location.y = y
-    scene.camera.location.z = z
-    #call update
+    camera.location.x = x
+    camera.location.y = y
+    camera.location.z = z
     update()
-    return scene.camera
+    return scene
 ```
 ### center obj
 
-this centers the camera on the objecct passed through
+this centers the camera on the desired object
 
 ```python
 
-def center_obj(obj_camera, point):
-    point = point.matrix_world.to_translation()
-
-    loc_camera = obj_camera.matrix_world.to_translation()
+def center_obj(camera, obj):
+    point = obj.matrix_world.to_translation()
+    loc_camera = camera.matrix_world.to_translation()
 
     direction = point - loc_camera
     # point the cameras '-Z' and use its 'Y' as up
     rot_quat = direction.to_track_quat('-Z', 'Y')
     
     # assume we're using euler rotation
-    obj_camera.rotation_euler = rot_quat.to_euler()
+    camera.rotation_euler = rot_quat.to_euler()
     update()
-    eulers = [degrees(a) for a in obj_camera.matrix_world.to_euler()]
-    z = eulers[2]
-    distance = measure(point, loc_camera)
-    return distance, z
     
 ```
 
 ### offset
 
-when creating training data it is important to note that convolutions dont work so well at the edges
+This function is used so that the object is not perfectly centered in frame. When creating training data it is important to note that convolutions dont work so well at the edges of an image. 
 
 ```python
 def offset(scene, camera, angle):
     
     angle = uniform(-angle, angle)
-    height = 480
-    width = 640
-        
+    width = bpy.context.scene.render.resolution_x
+    height = bpy.context.scene.render.resolution_y
+    
     if width > height:    
         ratio = height / width  
         desired_x = (50 / 2) * (angle/100) * ratio
