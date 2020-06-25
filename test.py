@@ -3,7 +3,6 @@ import mathutils
 import json
 from random import randint, uniform
 from math import *
-from mathutils import Vector
 
 def update():
     dg = bpy.context.evaluated_depsgraph_get() 

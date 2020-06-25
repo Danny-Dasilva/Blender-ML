@@ -33,11 +33,8 @@ The following code is found in `/classroom/static.blend`
 ### imports
 ```python
 import bpy
-import mathutils
 import json
 from random import randint, uniform
-from math import *
-from mathutils import Vector
 ```
 
 ### update
@@ -300,11 +297,16 @@ Most of the functions used are from the first project but there are a few new on
 
 in order to properly make use of blenders physics sim to render object detection images the scene must be changed a bit from a previous example. This is already done in the example file but the instructions are included here. 
 
+The floor, chairs,  desk and objects pictured below have a rigid body physics property applied with the passive type.
+<img src="imgs/scene_setup_01.png"/> 
+
+Our object of interest has a rigid body active property applied to it. 
+
+The chairs and a few other objects are moodified so their mesh properties can be captured and have physics properties applied. 
 
 
 
-
-## randomize_obj
+### randomize_obj
 place object at random location
 
 ```python
@@ -319,14 +321,18 @@ def randomize_obj(obj, x, y, z):
     obj.rotation_euler[1] = roll*(pi/180)
     obj.rotation_euler[2] = yaw*(pi/180.0)
     
-    
     obj.location.x = uniform(-x, x)
     obj.location.y = uniform(-y, y)
     obj.location.z = z
 
 ```
+
+* here I am not randomizing the z axis so our active object can fall on to the passive ones and we wont have any mesh collisions
+
 ## increment frames
-loop through physics simulation
+loop through physics simulation frames
+
+
 ```python
 def increment_frames(scene, frames):
     for i in range(frames):
@@ -335,33 +341,41 @@ def increment_frames(scene, frames):
 ```
 
 ## get raycast percentage
-When running the object through blenders physics simulation there is a chance the object is obstructed.
-This function cast rays at each of the object vertices and compares them to where the ray is hit. 
-It then returns the percent hit as a value. If the object is fully obscructed it will return 0, and if it is fully displayed
-it will display about 50% because half of the rays will hit and the rest will be obstructed by the object. To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
+When running the object through blenders physics simulation or simply randomly spawning it without specific constraints there is a chance the object will be obstructed from the camera.
+
+In order to solve this problem the raycast fuction below is used. This function cast rays at each of the object vertices and compares them to where the ray is hit. 
 
 
-rays cast at every vertex
+#### Rays cast at every vertex
 
 <img src="imgs/1_side.png" width="425"/> <img src="imgs/1_back.png" width="425"/> 
 
 
-rays that actually make contact with each vertex
+
+
+The example above ignores the mesh however, If we take the mesh into account somewhere around 50% of the rays hit. 
+
+#### rays that actually make contact with each vertex
 
 <img src="imgs/2_side.png" width="425"/> <img src="imgs/2_back.png" width="425"/> 
 
 * percent hit: 46%
 
-ray cast with object obstruction
+* To note: this value can be less or greater than 50% if the object is not fully symmetrical and is rotated in a way where more or less vertices are shown. 
+
+
+
+#### ray cast with object obstruction
 
 <img src="imgs/3_side.png" width="425"/> <img src="imgs/3_back.png" width="425"/> 
 
 * percent hit: 15%
 
+The value returned from the funtion will be the percentage of rays hit. Therefore if the object is fully obstructed this will be 0%
 
 
 
-*helpers BVHTreeAndVerticesInWorldFromObj and DeselectEdgesAndPolygons
+#### the functiomns below are helpers 
 ```python
 
 def BVHTreeAndVerticesInWorldFromObj( obj ):
@@ -425,7 +439,6 @@ If the raycast percentage returns a value less than our cutoff we will start the
 
 
 ```python
-!remove and update
 def batch_render(file_prefix="render"):
 
     scene_setup_steps = 20
