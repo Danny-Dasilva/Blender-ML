@@ -21,6 +21,13 @@ While these will not cover every scenario the methods provided can be combined t
 
 In this section we will be going over the general setup and functions that pull useful Object Decectition data with the assumption that the object in our scene will remain in the same position. This means the object wont change locations relative to the other objects in the scene. Another assumption will be that the camera can see the object in the scene regardless of where it is positioned. Later on in the tutorial we will cover the camera being obstructed by object in the scene. For now we will lay the basic groundwork of randomly spawning the camera and pulling object detection cordinates from our desired object.
 
+
+
+**important !**
+
+* if you see a bullet point bellow a function it indicates sections of importance
+
+
 The following code is found in `/classroom/static.blend`
 
 ### imports
@@ -63,6 +70,10 @@ def randomize_camera(scene, camera,  x, y, z):
     update()
     return scene
 ```
+
+* For this example we will not be randomizing the z axis
+
+
 ### center obj
 
 this centers the camera on the desired object
@@ -93,16 +104,16 @@ def offset(scene, camera, angle):
     angle = uniform(-angle, angle)
     width = bpy.context.scene.render.resolution_x
     height = bpy.context.scene.render.resolution_y
-    
+    lens = bpy.data.cameras[camera.name].lens
     if width > height:    
         ratio = height / width  
-        desired_x = (50 / 2) * (angle/100) * ratio
-        desired_y = (50 / 2) * (angle/100) 
+        desired_x = (lens / 2) * (angle/100) * ratio
+        desired_y = (lens / 2) * (angle/100) 
     
     elif height > width:
         ratio = width / height  
-        desired_x = (50 / 2) * (angle/100)
-        desired_y = (50 / 2) * (angle/100) * ratio
+        desired_x = (lens / 2) * (angle/100)
+        desired_y = (lens / 2) * (angle/100) * ratio
         
    
     scene.camera.rotation_mode = 'XYZ'
@@ -118,59 +129,44 @@ def offset(scene, camera, angle):
 ```
 
 
-## get cordinates
+### get cordinates
 
 
 *helpers
-see https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function. This will pull the outermost cordinates of the object and return them in the form of pixel cordinates. 
+see https://olestourko.github.io/2018/02/03/generating-convnet-training-data-with-blender-1.html for this function. This will pull the outermost 3d cordinates of the object and return them in the form of percent pixel values of the image. 
 ```python
 def camera_view_bounds_2d(scene, camera_object, mesh_object):
-    """ 
-    Summary line. 
-  
+    """
     Returns camera space bounding box of the mesh object.
     Gets the camera frame bounding box, which by default is returned without any transformations applied.
     Create a new mesh object based on mesh_object and undo any transformations so that it is in the same space as the
-    camera frame. Find the min/max vertex coordinates of the mesh visible in the frame, or None if the mesh is not in view
-  
-    Parameters: 
-    scene (int): Description of arg1 
-    camera_object (int): Description of arg1 
-    mesh_object (int): Description of arg1 
-  
-    Returns: 
-    bounding_box: (min_x, min_y), (max_x, max_y)
+    camera frame. Find the min/max vertex coordinates of the mesh visible in the frame, or None if the mesh is not in view.
     """
 
-    """ Get the inverse transformation matrix. """
+    #Get the inverse transformation matrix
     matrix = camera_object.matrix_world.normalized().inverted()
-    """ Create a new mesh data block, using the inverse transform matrix to undo any transformations. """
+    #Create a new mesh data block, using the inverse transform matrix to undo any transformations
     dg = bpy.context.evaluated_depsgraph_get()
-    
     ob = mesh_object.evaluated_get(dg) #this gives us the evaluated version of the object. Aka with all modifiers and deformations applied.
     mesh = ob.to_mesh()
     #mesh = mesh_object.to_mesh()
     mesh.transform(mesh_object.matrix_world)
     mesh.transform(matrix)
 
-    """ Get the world coordinates for the camera frame bounding box, before any transformations. """
+    #Get the world coordinates for the camera frame bounding box, before any transformations
     frame = [-v for v in camera_object.data.view_frame(scene=scene)[:3]]
-
-
-    lx = []
+    lx = []Along with thsi the json data 
     ly = []
-    
     for v in mesh.vertices:
         co_local = v.co
         z = -co_local.z
 
         if z <= 0.0:
-            """ Vertex is behind the camera; ignore it. """
+            #Vertex is behind the camera; ignore it
             continue
         else:
-            """ Perspective division """
+            #Perspective division
             frame = [(v / (v.z / z)) for v in frame]
-        
         min_x, max_x = frame[1].x, frame[2].x
         min_y, max_y = frame[0].y, frame[1].y
         
@@ -180,25 +176,23 @@ def camera_view_bounds_2d(scene, camera_object, mesh_object):
         ly.append(y)
     
     mesh_object.to_mesh_clear()
-
-    """ Image is not in view if all the mesh verts were ignored """
+    # Image is not in view if all the mesh verts were ignored
     if not lx or not ly:
         return None
-    
     min_x = np.clip(min(lx), 0.0, 1.0)
     min_y = np.clip(min(ly), 0.0, 1.0)
     max_x = np.clip(max(lx), 0.0, 1.0)
     max_y = np.clip(max(ly), 0.0, 1.0)
 
-    """ Image is not in view if both bounding points exist on the same side """
+    #Image is not in view if both bounding points exist on the same side
     if min_x == max_x or min_y == max_y:
         return None
     return (min_x, min_y), (max_x, max_y)
 ```
 
+### Write Cordinates
 returns a json object with the 2d cordinate data of the box in the following json format
 ```python
-!remove and update
 def get_cordinates(scene, camera,  objects, filename):
     camera_object = camera
     
@@ -219,13 +213,13 @@ def get_cordinates(scene, camera,  objects, filename):
             return None
     return cordinates
 ```
-
-`
+### Json returned
+```json
 [
     {
-        "image": "render-0y.png",
+        "image": "image_name.jpg",
         "meshes": {
-            "monkey": {
+            "Object_ID": {
                 "x1": 0.6286790958986577,
                 "x2": 0.7885611171182803,
                 "y1": 0.10051047409295591,
@@ -234,49 +228,61 @@ def get_cordinates(scene, camera,  objects, filename):
         }
     },
 ]
-`
+```
 
-if you put your renders and json file in a directory with `/scripts/visualize.py` you can view the boxes generated by the get cordinates function
+* if you place `scripts/visualize.py` into the directory with your renders and json file you can view the boxes generated by the get cordinates function. simply type `python3 visualize.py` in the directory. All the example box cordinate images are generated with this python file.
 
-## batch render
+### Batch Render
 
-with all this we can loop through the data and write out the image to a folder. Along with thsi the json data 
+With all this we can loop through the data and write out the image to a folder. 
 
 
 ```python
-!remove and update
-def batch_render(file_prefix="render"):
+def batch_render(img_count=1, file_prefix="render", image_dir="./renders/"):
 
-    scene_setup_steps = 4
+    #Set objects
+    object = bpy.data.objects["Suzanne"]
+    scene = bpy.context.scene
+    camera = bpy.data.objects['Camera']
 
     labels = []
-    for i in range(0, scene_setup_steps):
-        monkey = bpy.data.objects["monkey"]
-        scene = bpy.data.scenes['Scene']
+    for i in range(img_count):
 
-        camera = randomize_camera(scene, 2.5, 3.5, 1.7)
-
-         
-        distance, z = center_obj(camera, monkey.matrix_world.to_translation())
-
-        offset(scene, camera, 85)
-
-        filename = '{}-{}y.png'.format(str(file_prefix), str(i))
+        # take note of cordinates as they relate to blenders 3d space
+        scene = randomize_camera(scene, camera, 2.5, 3.5, 1.7)
+        center_obj(camera, object)
+        offset(scene, camera, 60)
         
-        bpy.context.scene.render.filepath = os.path.join('./renders/', filename)
+        # checks whether your output is jpeg or png
+        file_format = scene.render.image_settings.file_format.lower()
+        
+        filename = f'{file_prefix}-{str(i)}.{file_format}'
+        
+        #write image out
+        bpy.context.scene.render.filepath = f'{image_dir}{filename}'
         bpy.ops.render.render(write_still=True)
-        scene_labels = get_cordinates(scene, camera, monkey, filename)
+        
+        #pull cordinates
+        scene_labels = get_cordinates(scene, camera, object, filename)
+        labels.append(scene_labels) 
 
-        labels.append(scene_labels) # Merge lists
-
-    with open('./renders/labels.json', 'w+') as f:
+    with open(f'{image_dir}labels.json', 'w+') as f:
         json.dump(labels, f, sort_keys=True, indent=4, separators=(',', ': '))
 
 
-
 ```
+* important to note here is the image directory declaration in the function.Along with this comes the randomize camera cordinates which will vary for your scene. Lastly is the object and camera definitions, which may vary in your project.
 
-`batch_render()`
+### Run it 
+
+specify tthe number of images you want generated and run the function
+
+`batch_render(img_count=4)`
+
+* images may take a while to render but you will see them appear in the designated render folder
+
+
+
 
 ### Randomly spawn Objects
 
@@ -285,8 +291,9 @@ def batch_render(file_prefix="render"):
 
 in `classroom_rand.py`
 
-In this section we will randomly spawn and rotate our object. Along with thus we will frame advance to make use of blenders physics simulation.
-Most of the functions used are from the first project but there are a few new ones to account for the physics and actually spawning the object. Along with this we will be adding in a visual check to make sure the object is visible in the scene. 
+In this section we will randomly spawn and rotate our object. Along with this we will frame advance to make use of blenders physics simulation.
+
+Most of the functions used are from the first project but there are a few new ones to account the object spawn. Along with this we will be adding a check to make sure the object is visible to our camera.
 
 ## randomize_obj
 place object at random location
