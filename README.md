@@ -289,11 +289,20 @@ specify tthe number of images you want generated and run the function
 <img src="imgs/spawn.png"/> 
 
 
-in `classroom_rand.py`
+in `/classroom/static.blend`
 
-In this section we will randomly spawn and rotate our object. Along with this we will frame advance to make use of blenders physics simulation.
+In this section we will randomly spawn and rotate our object. Along with this we will frame advance to make use of blenders physics simulation. 
 
 Most of the functions used are from the first project but there are a few new ones to account the object spawn. Along with this we will be adding a check to make sure the object is visible to our camera.
+
+
+## Scene setup
+
+in order to properly make use of blenders physics sim to render object detection images the scene must be changed a bit from a previous example. This is already done in the example file but the instructions are included here. 
+
+
+
+
 
 ## randomize_obj
 place object at random location
