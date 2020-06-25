@@ -13,7 +13,7 @@ The following three scenarios are covered below
 * Multiple unique objects
 
 
-While these will not cover every scenario the methods provided can be combined to fit your specific use case. The following examples can be found in the `/classroom` folder of this repo. All the blender files are modified versions of the Class Room file by Christophe Seux found at https://www.blender.org/download/demo-files/. If you are wondering what is modified from the default scene, the classroom is relatively centered in global space and a image texture is placed in the window. Along with this the default samples is lowered and all the compositing work is removed in place of the Nvidia AI denoiser. Images are also set to 60 by 480.
+While these will not cover every scenario the methods provided can be combined to fit your specific use case. The following examples can be found in the `/classroom` folder of this repo. All the blender files are modified versions of the Class Room file by Christophe Seux found at https://www.blender.org/download/demo-files/. If you are wondering what is modified from the default scene, the classroom is relatively centered in global space and a image texture is placed in the window. Along with this the default samples is lowered and all the compositing work is removed in place of the Nvidia AI denoiser. Images are also set to 640 by 480.
 
 ## Static object 
 <img src="imgs/static.png"/> 
