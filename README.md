@@ -380,7 +380,7 @@ The value returned from the funtion will be the percentage of rays hit. Therefor
 
 
 
-#### the functiomns below are helpers 
+#### the functions below are helpers 
 
 ```python
 
