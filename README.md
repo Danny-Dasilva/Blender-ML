@@ -362,7 +362,7 @@ The example above showswhere the rays are being casted. This does not take into 
 
 #### rays that actually make contact with each vertex
 
-<img src="imgs/2_side.png" width="425"/> <img src="imgs/2_back.png" width="425"/> 
+<img src="imgs/2_side.png" width="300"/> <img src="imgs/2_back.png" width="300"/> 
 
 * percent hit: 46%
 
