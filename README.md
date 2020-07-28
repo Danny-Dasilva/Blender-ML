@@ -353,7 +353,7 @@ In order to solve this problem the raycast fuction below is used. This function 
 
 #### Rays cast at every vertex
 
-<img src="imgs/1_side.png" width="425"/> <img src="imgs/1_back.png" width="425"/> 
+<img src="imgs/1_side.png" width="400"/> <img src="imgs/1_back.png" width="400"/> 
 
 
 
@@ -362,7 +362,7 @@ The example above showswhere the rays are being casted. This does not take into 
 
 #### rays that actually make contact with each vertex
 
-<img src="imgs/2_side.png" width="300"/> <img src="imgs/2_back.png" width="300"/> 
+<img src="imgs/2_side.png" width="400"/> <img src="imgs/2_back.png" width="400"/> 
 
 * percent hit: 46%
 
@@ -372,7 +372,7 @@ The example above showswhere the rays are being casted. This does not take into 
 
 #### ray cast with object obstruction
 
-<img src="imgs/3_side.png" width="425"/> <img src="imgs/3_back.png" width="425"/> 
+<img src="imgs/3_side.png" width="400"/> <img src="imgs/3_back.png" width="400"/> 
 
 * percent hit: 15%
 
