@@ -1,4 +1,15 @@
 
+
+To do
+
+Change json write function and offset camera
+Write clean offset camera function
+Change batch render to write out every image taken
+
+Change all for loops to generators
+
+Yield on batch render exception
+
 # Generate training data for object detection model
 
 In this tutorial we will go over generating Object Detection data in Blender. 
