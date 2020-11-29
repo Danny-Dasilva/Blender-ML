@@ -8,7 +8,7 @@ Change batch render to write out every image taken
 
 Change all for loops to generators
 
-Yield on batch render exception
+Yield on batch render exception stack overflow thing
 
 # Generate training data for object detection model
 
